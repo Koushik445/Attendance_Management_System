@@ -1,0 +1,11 @@
+{
+  "total_images": 50,
+  "detection_success_rate": 0.9,
+  "exact_match_accuracy": 0.12,
+  "character_level_accuracy": 0.36,
+  "character_error_rate": 0.53,
+  "detector_used_counts": {
+    "yolo": 45,
+    "haar_fallback": 5
+  }
+}

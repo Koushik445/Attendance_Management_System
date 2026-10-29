@@ -1,0 +1,30 @@
+# --- Web framework ---
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+python-multipart==0.0.9
+
+# --- Config / validation ---
+pydantic==2.9.2
+pydantic-settings==2.5.2
+python-dotenv==1.0.1
+
+# --- Database ---
+sqlalchemy==2.0.35
+alembic==1.13.2
+psycopg2-binary==2.9.9
+pgvector==0.3.4
+
+# --- ML: face recognition (active from Phase 3) ---
+insightface==0.7.3
+onnxruntime==1.19.2       # swap for onnxruntime-gpu if you have a CUDA GPU
+opencv-python-headless==4.10.0.84   # bundled Haar cascades also used as ANPR fallback detector
+numpy==1.26.4
+pillow==10.4.0
+
+# --- ML: arrival routing (YOLO) + ANPR (active from Phase 5/6) ---
+ultralytics==8.3.0
+easyocr==1.7.2
+
+# --- Utilities ---
+python-slugify==8.0.4
+huggingface_hub==0.25.1   # used only by scripts/download_plate_model.py

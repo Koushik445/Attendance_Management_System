@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Faculty Attendance Management System — Multimodal Biometric Kiosk</title>
+  <!-- Google Fonts: Inter & Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Chart.js for real-time analytics -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div class="layout">
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+      <div class="brand-box">
+        <div class="brand-logo">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+            <circle cx="9" cy="7" r="4"></circle>
+            <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+          </svg>
+        </div>
+        <div>
+          <h1 class="brand">FAMS <span class="badge-pro">PRO</span></h1>
+          <p class="brand-sub">Faculty Attendance System</p>
+        </div>
+      </div>
+
+      <nav id="navLinks">
+        <a class="nav-link active" href="#" data-page="dashboard">
+          <span class="nav-icon">📊</span> Dashboard
+        </a>
+        <a class="nav-link" href="#" data-page="verify">
+          <span class="nav-icon">🎯</span> Verify Attendance
+        </a>
+        <a class="nav-link" href="#" data-page="enroll">
+          <span class="nav-icon">👤➕</span> Enroll Faculty
+        </a>
+        <a class="nav-link" href="#" data-page="persons">
+          <span class="nav-icon">👥</span> Faculty Directory
+        </a>
+        <a class="nav-link" href="#" data-page="vehicles">
+          <span class="nav-icon">🚗</span> Vehicle Registry
+        </a>
+        <a class="nav-link" href="#" data-page="recognition">
+          <span class="nav-icon">🔍</span> Recognition History
+        </a>
+        <a class="nav-link" href="#" data-page="attendance">
+          <span class="nav-icon">📋</span> Attendance Log
+        </a>
+        <a class="nav-link" href="#" data-page="status">
+          <span class="nav-icon">⚙️</span> System & Models
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="system-indicator">
+          <span class="pulse-dot"></span> System Live & Operational
+        </div>
+        <p class="sidebar-note">Multimodal Fusion: Face (ArcFace) + ANPR (YOLOv8) + ID Card</p>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="content">
+
+      <!-- ============ 1. DASHBOARD ============ -->
+      <section class="page active" id="page-dashboard">
+        <div class="page-header">
+          <div>
+            <h2>Executive Dashboard</h2>
+            <p class="muted">Live multimodal attendance monitoring and analytics.</p>
+          </div>
+          <div class="btn-group">
+            <button class="btn-secondary" id="refreshDashboardBtn">🔄 Refresh</button>
+            <a href="http://127.0.0.1:8000/api/attendance/export" class="btn-primary" target="_blank" download>
+              📥 Export CSV
+            </a>
+          </div>
+        </div>
+
+        <div class="stat-grid" id="dashboardStats">
+          <div class="stat-card">
+            <div class="stat-icon">👥</div>
+            <div class="stat-info">
+              <div class="value" id="statEnrolled">-</div>
+              <div class="label">Total Enrolled</div>
+            </div>
+          </div>
+          <div class="stat-card highlight">
+            <div class="stat-icon">✅</div>
+            <div class="stat-info">
+              <div class="value" id="statPresentToday">-</div>
+              <div class="label">Present Today</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">📈</div>
+            <div class="stat-info">
+              <div class="value" id="statRateToday">0%</div>
+              <div class="label">Attendance Rate</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">🚗</div>
+            <div class="stat-info">
+              <div class="value" id="statVehicles">-</div>
+              <div class="label">Vehicles Registered</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Charts Grid -->
+        <div class="charts-grid">
+          <div class="card chart-card">
+            <div class="card-title">
+              <h3>Verification Method Breakdown</h3>
+              <span class="badge-sm">Multimodal</span>
+            </div>
+            <div class="chart-container">
+              <canvas id="methodsChart"></canvas>
+            </div>
+          </div>
+          <div class="card chart-card">
+            <div class="card-title">
+              <h3>Arrival Type Distribution</h3>
+              <span class="badge-sm">YOLOv8</span>
+            </div>
+            <div class="chart-container">
+              <canvas id="arrivalChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Feed -->
+        <div class="card wide">
+          <div class="card-header-flex">
+            <h3>Recent Verified Check-Ins</h3>
+            <span class="muted" id="recentUpdateText">Live feed</span>
+          </div>
+          <div id="dashboardRecent" class="table-wrap"></div>
+        </div>
+      </section>
+
+      <!-- ============ 2. VERIFY ATTENDANCE (KIOSK) ============ -->
+      <section class="page" id="page-verify">
+        <div class="card wide verify-card">
+          <div class="page-header border-bottom">
+            <div>
+              <h2>Faculty Attendance Verification Kiosk</h2>
+              <p class="muted">Live biometric verification via Webcam or Photo Upload.</p>
+            </div>
+            <div class="kiosk-status" id="kioskStatus">
+              <span class="status-badge ready">Ready to Scan</span>
+            </div>
+          </div>
+
+          <!-- Input Source Toggle -->
+          <div class="field-group">
+            <label class="field-label">Camera Input Mode</label>
+            <div class="pill-row" id="cameraModePills">
+              <button class="pill active" id="btnModeWebcam">📹 Live Webcam</button>
+              <button class="pill" id="btnModeUpload">📁 File Upload</button>
+            </div>
+          </div>
+
+          <!-- Arrival selection -->
+          <div class="field-group">
+            <label class="field-label">Arrival Type</label>
+            <div class="pill-row" id="arrivalPills">
+              <button class="pill active" data-arrival="AUTO">⚡ Auto Detect (YOLO)</button>
+              <button class="pill" data-arrival="WALKING">🚶 Walking</button>
+              <button class="pill" data-arrival="CAR">🚗 Car</button>
+              <button class="pill" data-arrival="BIKE">🏍️ Bike</button>
+            </div>
+          </div>
+
+          <!-- Attendance Action: Entry vs Exit -->
+          <div class="field-group">
+            <label class="field-label">Attendance Direction (Action Mode)</label>
+            <div class="pill-row" id="eventTypePills">
+              <button class="pill active" data-event="AUTO">🔄 Smart Auto (Check-In / Out)</button>
+              <button class="pill" data-event="ENTRY">🟢 Check-In (ENTRY)</button>
+              <button class="pill" data-event="EXIT">🔴 Check-Out (EXIT)</button>
+            </div>
+          </div>
+
+          <!-- Webcam Container -->
+          <div id="webcamContainer" class="camera-panel">
+            <div class="video-wrapper">
+              <video id="webcamVideo" autoplay playsinline muted></video>
+              <div class="face-guide-overlay">
+                <div class="guide-box"></div>
+                <p class="guide-hint">Align face inside the frame</p>
+              </div>
+              <canvas id="captureCanvas" hidden></canvas>
+            </div>
+            <div class="camera-controls">
+              <button id="startCamBtn" class="btn-secondary">▶️ Start Camera</button>
+              <button id="snapVerifyBtn" class="btn-primary" disabled>📸 Capture & Verify Now</button>
+            </div>
+          </div>
+
+          <!-- File Upload Container (Hidden by default when webcam mode is active) -->
+          <div id="uploadContainer" class="upload-panel" hidden>
+            <div class="field-group">
+              <label class="field-label">Face Image</label>
+              <label class="upload-box" id="faceDropLabel">
+                <input type="file" id="faceInput" accept="image/*" hidden />
+                <div class="upload-prompt" id="faceUploadText">
+                  <span class="upload-icon">📷</span>
+                  <span>Click or drag & drop faculty face image</span>
+                </div>
+                <img id="facePreview" class="preview" hidden />
+              </label>
+            </div>
+
+            <div class="field-group" id="vehicleField">
+              <label class="field-label">Vehicle Image <span class="muted">(Required for Car / Bike)</span></label>
+              <label class="upload-box" id="vehicleDropLabel">
+                <input type="file" id="vehicleInput" accept="image/*" hidden />
+                <div class="upload-prompt" id="vehicleUploadText">
+                  <span class="upload-icon">🚘</span>
+                  <span>Click or drag & drop vehicle plate image</span>
+                </div>
+                <img id="vehiclePreview" class="preview" hidden />
+              </label>
+            </div>
+
+            <button id="verifyBtn" class="btn-primary">Verify Attendance (Uploaded Files)</button>
+          </div>
+
+          <!-- Dynamic ID Card Input Prompt (Revealed on conflict or low confidence) -->
+          <div class="field-group alert-box-warning" id="idCardField" hidden>
+            <div class="alert-header">
+              <span class="alert-icon">⚠️</span>
+              <div>
+                <strong>Additional Verification Required</strong>
+                <p class="alert-desc">The system detected an ambiguous or conflicting signal. Please enter or scan the faculty ID card.</p>
+              </div>
+            </div>
+            <div class="input-with-button">
+              <input type="text" id="idCardInput" class="text-input" placeholder="e.g. DEMO001 or FAC012" />
+              <button id="submitIdBtn" class="btn-secondary">Submit ID</button>
+            </div>
+          </div>
+
+          <!-- Verification Results Modal / Card -->
+          <div id="resultPanel" class="result-panel" hidden></div>
+        </div>
+      </section>
+
+      <!-- ============ 3. ENROLL FACULTY (NEW) ============ -->
+      <section class="page" id="page-enroll">
+        <div class="card wide">
+          <div class="page-header border-bottom">
+            <div>
+              <h2>Faculty Enrollment Portal</h2>
+              <p class="muted">Register a new faculty member with their facial embedding and vehicle details.</p>
+            </div>
+            <span class="badge-sm">ArcFace 512D</span>
+          </div>
+
+          <form id="enrollForm" class="enroll-form">
+            <div class="form-grid">
+              <!-- Basic Info -->
+              <div class="form-column">
+                <div class="field-group">
+                  <label class="field-label" for="enrollName">Full Name *</label>
+                  <input type="text" id="enrollName" class="text-input" placeholder="e.g. Dr. Robert Vance" required />
+                </div>
+
+                <div class="field-group">
+                  <label class="field-label" for="enrollEmpId">Employee ID *</label>
+                  <input type="text" id="enrollEmpId" class="text-input" placeholder="e.g. FAC015" required />
+                </div>
+
+                <div class="field-group">
+                  <label class="field-label" for="enrollDept">Department</label>
+                  <select id="enrollDept" class="text-input">
+                    <option value="Computer Science & Engineering">Computer Science & Engineering</option>
+                    <option value="Electronics & Communication">Electronics & Communication</option>
+                    <option value="Mechanical Engineering">Mechanical Engineering</option>
+                    <option value="Information Technology">Information Technology</option>
+                    <option value="Physics & Mathematics">Physics & Mathematics</option>
+                    <option value="Management Studies">Management Studies</option>
+                  </select>
+                </div>
+
+                <div class="field-group">
+                  <label class="field-label" for="enrollPlate">Vehicle Number Plate (Optional)</label>
+                  <input type="text" id="enrollPlate" class="text-input" placeholder="e.g. AP39KA3617" />
+                </div>
+
+                <div class="field-group">
+                  <label class="field-label" for="enrollVehicleType">Vehicle Type</label>
+                  <div class="pill-row" id="enrollVehicleTypePills">
+                    <button type="button" class="pill active" data-vtype="CAR">🚗 Car</button>
+                    <button type="button" class="pill" data-vtype="BIKE">🏍️ Bike</button>
+                    <button type="button" class="pill" data-vtype="NONE">None</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Photo Capture / Upload -->
+              <div class="form-column">
+                <div class="field-group">
+                  <label class="field-label">Faculty Photo (for 512D Face Embedding) *</label>
+                  <div class="pill-row mb-10">
+                    <button type="button" class="pill active" id="btnEnrollPhotoUpload">📁 Upload File</button>
+                    <button type="button" class="pill" id="btnEnrollPhotoCam">📹 Live Webcam</button>
+                  </div>
+
+                  <!-- Upload Area -->
+                  <div id="enrollUploadArea">
+                    <label class="upload-box" id="enrollDropLabel">
+                      <input type="file" id="enrollPhotoInput" accept="image/*" hidden />
+                      <div class="upload-prompt" id="enrollUploadText">
+                        <span class="upload-icon">👤</span>
+                        <span>Click to choose clear frontal face photo</span>
+                      </div>
+                      <img id="enrollPreview" class="preview" hidden />
+                    </label>
+                  </div>
+
+                  <!-- Camera Area -->
+                  <div id="enrollCameraArea" class="camera-panel small" hidden>
+                    <video id="enrollWebcamVideo" autoplay playsinline muted></video>
+                    <div class="camera-controls">
+                      <button type="button" id="startEnrollCamBtn" class="btn-secondary">Start Camera</button>
+                      <button type="button" id="snapEnrollCamBtn" class="btn-primary" disabled>Snap Photo</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="btn-row mt-20">
+              <button type="submit" id="submitEnrollBtn" class="btn-primary btn-large">
+                🚀 Complete Faculty Enrollment
+              </button>
+            </div>
+            <div id="enrollResult" class="result-message" hidden></div>
+          </form>
+        </div>
+      </section>
+
+      <!-- ============ 4. FACULTY DIRECTORY ============ -->
+      <section class="page" id="page-persons">
+        <div class="page-header">
+          <div>
+            <h2>Enrolled Faculty Directory</h2>
+            <p class="muted">All registered personnel in the PostgreSQL vector database.</p>
+          </div>
+          <button class="btn-secondary" id="btnGotoEnroll">+ Add New Faculty</button>
+        </div>
+        <div class="card wide">
+          <div class="search-bar-wrap">
+            <input type="text" id="searchPersonsInput" class="text-input" placeholder="🔍 Search by name, ID, or department..." />
+          </div>
+          <div id="personsTable" class="table-wrap"></div>
+        </div>
+      </section>
+
+      <!-- ============ 5. VEHICLE REGISTRY ============ -->
+      <section class="page" id="page-vehicles">
+        <div class="page-header">
+          <div>
+            <h2>Registered Vehicles</h2>
+            <p class="muted">License plates mapped to faculty members for ANPR cross-verification.</p>
+          </div>
+        </div>
+        <div class="card wide">
+          <div class="search-bar-wrap">
+            <input type="text" id="searchVehiclesInput" class="text-input" placeholder="🔍 Search by plate number or person ID..." />
+          </div>
+          <div id="vehiclesTable" class="table-wrap"></div>
+        </div>
+      </section>
+
+      <!-- ============ 6. RECOGNITION HISTORY ============ -->
+      <section class="page" id="page-recognition">
+        <div class="page-header">
+          <div>
+            <h2>Recognition Audit Trail</h2>
+            <p class="muted">Live log of biometric scans, arrival classification, and fusion decisions.</p>
+          </div>
+          <span class="badge-sm" style="background: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); font-weight:700;">
+            🔥 Top 15 Most Recent
+          </span>
+        </div>
+        <div class="card wide">
+          <div id="recognitionTable" class="table-wrap"></div>
+        </div>
+      </section>
+
+      <!-- ============ 7. ATTENDANCE HISTORY (CALENDAR & DAILY NAVIGATION) ============ -->
+      <section class="page" id="page-attendance">
+        <div class="page-header">
+          <div>
+            <h2>Faculty Attendance & Campus Log</h2>
+            <p class="muted">Daily attendance records, campus dwell duration, and check-in/out tracking.</p>
+          </div>
+          <div class="btn-group">
+            <button class="btn-secondary" id="btnTodayAttendance">📍 Today</button>
+            <a href="http://127.0.0.1:8000/api/attendance/export" class="btn-primary" id="btnExportDayCsv" target="_blank" download>
+              📥 Export Day CSV
+            </a>
+          </div>
+        </div>
+
+        <!-- Calendar Month Navigator Widget -->
+        <div class="card wide calendar-widget-card">
+          <div class="calendar-top-bar">
+            <div class="calendar-nav-controls">
+              <button type="button" class="btn-secondary btn-icon" id="calPrevMonthBtn" title="Previous Month">◀</button>
+              <h3 id="calendarMonthTitle" class="calendar-month-heading">October 2026</h3>
+              <button type="button" class="btn-secondary btn-icon" id="calNextMonthBtn" title="Next Month">▶</button>
+            </div>
+            <div class="calendar-date-input-wrap">
+              <label for="calendarDateInput" class="field-label-inline">Jump to Date:</label>
+              <input type="date" id="calendarDateInput" class="text-input date-input" />
+            </div>
+          </div>
+
+          <!-- Interactive Month Grid -->
+          <div class="calendar-grid-wrap">
+            <div class="calendar-weekdays">
+              <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+            </div>
+            <div class="calendar-days-grid" id="calendarDaysGrid">
+              <!-- Dynamically populated day cells -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Selected Day's Live Summary KPIs -->
+        <div class="stat-grid" id="dayStatsGrid">
+          <div class="stat-card">
+            <div class="stat-icon">👥</div>
+            <div class="stat-info">
+              <div class="value" id="dayStatPresent">-</div>
+              <div class="label">Total Present on Day</div>
+            </div>
+          </div>
+          <div class="stat-card highlight">
+            <div class="stat-icon">🏢</div>
+            <div class="stat-info">
+              <div class="value" id="dayStatInCampus">-</div>
+              <div class="label">Currently in Campus</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">🚪</div>
+            <div class="stat-info">
+              <div class="value" id="dayStatCheckedOut">-</div>
+              <div class="label">Checked Out</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">⏱️</div>
+            <div class="stat-info">
+              <div class="value" id="dayStatAvgDuration">-</div>
+              <div class="label">Avg Campus Duration</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Selected Day's Attendance Table -->
+        <div class="card wide">
+          <div class="card-header-flex">
+            <div>
+              <h3 id="dayRecordsTitle">Daily Attendance Records</h3>
+              <p class="muted" id="dayRecordsSub">Select a date above to view attendance records.</p>
+            </div>
+            <div class="search-bar-wrap" style="margin-bottom:0;">
+              <input type="text" id="searchDayAttendanceInput" class="text-input" placeholder="🔍 Filter by name or ID..." style="min-width:240px;" />
+            </div>
+          </div>
+          <div id="dayAttendanceTable" class="table-wrap"></div>
+        </div>
+      </section>
+
+      <!-- ============ 8. SYSTEM STATUS & DEMO ADMIN ============ -->
+      <section class="page" id="page-status">
+        <div class="page-header">
+          <div>
+            <h2>System Health & Machine Learning Models</h2>
+            <p class="muted">Active models, evaluation metrics, and database administration.</p>
+          </div>
+        </div>
+
+        <div class="card wide" id="statusCard"></div>
+
+        <div class="card wide mt-20">
+          <h3>Database Admin Controls</h3>
+          <p class="muted">Manage demo data or reset database for a fresh demonstration.</p>
+          <div class="btn-row">
+            <button id="seedBtn" class="btn-secondary">🌱 Seed Demo Data</button>
+            <button id="clearBtn" class="btn-danger">🗑️ Wipe Demo Data</button>
+          </div>
+          <pre id="adminOutput" class="admin-output" hidden></pre>
+        </div>
+      </section>
+
+      <!-- ============ EDIT FACULTY MODAL ============ -->
+      <div id="editPersonModal" class="modal-backdrop" hidden>
+        <div class="modal-card">
+          <div class="modal-header">
+            <div>
+              <h3>✏️ Edit Faculty Member</h3>
+              <p class="muted">Update candidate details, vehicle mapping, or facial biometrics.</p>
+            </div>
+            <button type="button" class="btn-close" id="closeEditModalBtn">&times;</button>
+          </div>
+
+          <form id="editPersonForm">
+            <input type="hidden" id="editPersonId" />
+            <div class="form-grid">
+              <div class="form-column">
+                <div class="field-group">
+                  <label class="field-label" for="editName">Full Name *</label>
+                  <input type="text" id="editName" class="text-input" required />
+                </div>
+
+                <div class="field-group">
+                  <label class="field-label" for="editEmpId">Employee ID *</label>
+                  <input type="text" id="editEmpId" class="text-input" required />
+                </div>
+
+                <div class="field-group">
+                  <label class="field-label" for="editDept">Department</label>
+                  <select id="editDept" class="text-input">
+                    <option value="Computer Science & Engineering">Computer Science & Engineering</option>
+                    <option value="Electronics & Communication">Electronics & Communication</option>
+                    <option value="Mechanical Engineering">Mechanical Engineering</option>
+                    <option value="Information Technology">Information Technology</option>
+                    <option value="Physics & Mathematics">Physics & Mathematics</option>
+                    <option value="Management Studies">Management Studies</option>
+                  </select>
+                </div>
+
+                <div class="field-group">
+                  <label class="field-label" for="editStatus">Status</label>
+                  <select id="editStatus" class="text-input">
+                    <option value="ACTIVE">ACTIVE</option>
+                    <option value="INACTIVE">INACTIVE</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-column">
+                <div class="field-group">
+                  <label class="field-label" for="editPlate">Vehicle Number Plate (Optional)</label>
+                  <input type="text" id="editPlate" class="text-input" placeholder="e.g. AP39KA3617" />
+                </div>
+
+                <div class="field-group">
+                  <label class="field-label">Vehicle Type</label>
+                  <div class="pill-row" id="editVehicleTypePills">
+                    <button type="button" class="pill active" data-vtype="CAR">🚗 Car</button>
+                    <button type="button" class="pill" data-vtype="BIKE">🏍️ Bike</button>
+                    <button type="button" class="pill" data-vtype="NONE">None</button>
+                  </div>
+                </div>
+
+                <div class="field-group">
+                  <label class="field-label">Update Face Photo <span class="muted">(Optional)</span></label>
+                  <label class="upload-box small" id="editPhotoDropLabel">
+                    <input type="file" id="editPhotoInput" accept="image/*" hidden />
+                    <div class="upload-prompt" id="editPhotoPrompt">
+                      <span class="upload-icon">📷</span>
+                      <span style="font-size:12px;">Choose photo to recompute 512D ArcFace</span>
+                    </div>
+                    <img id="editPhotoPreview" class="preview" hidden />
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div id="editResult" class="result-message" hidden></div>
+
+            <div class="modal-footer">
+              <button type="button" class="btn-secondary" id="cancelEditBtn">Cancel</button>
+              <button type="submit" class="btn-primary" id="saveEditBtn">💾 Save Changes</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <script src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,18 @@
+{
+  "total_images": 60,
+  "correct": 59,
+  "accuracy": 0.9833,
+  "no_face_detected": 0,
+  "per_person_accuracy": {
+    "ABHAY": 1.0,
+    "Aditi": 1.0,
+    "Aisvarrya": 1.0,
+    "Ayusha": 1.0,
+    "Chinoy": 0.8333,
+    "MEGHANA": 1.0,
+    "Madhura": 1.0,
+    "Neha": 1.0,
+    "Rahul_A": 1.0,
+    "Rajath": 1.0
+  }
+}
